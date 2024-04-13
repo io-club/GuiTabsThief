@@ -39,8 +39,6 @@ def universal(video_url, variance=False, skip=None):
 
     img = None
     result = None
-
-
     frame_number = 0
 
     while cap.isOpened():
@@ -67,7 +65,6 @@ def universal(video_url, variance=False, skip=None):
 
         threshold = 50
         padding = 150
-        threshold2 = 20
         padding2 = 30
         
         # Find the abrupt point where the line_means value steeps and not within the padding areas on both sides
@@ -104,25 +101,12 @@ def universal(video_url, variance=False, skip=None):
                     break
         if not found_exact:
             abrupt_point = abrupt_point_r
-
-        # Plot the abrupt point and line means
-
-        # import matplotlib.pyplot as plt
-
-        # plt.plot(line_means_original)
-        # plt.plot(line_means, color='g')
-        # plt.axvline(x=abrupt_point, color='r', linestyle='--')
-        # plt.xlabel('Frame Number')
-        # plt.ylabel('Line Means')
-        # plt.title('Abrupt Point and Line Means')
-        # plt.show()
         
         smaller_frame = None
         if abrupt_point < (frame.shape[0] / 2):
             smaller_frame = frame[padding2:abrupt_point]
         else:
             smaller_frame = frame[abrupt_point:-(padding2 + 1)]
-
 
         if img is None:
             img = smaller_frame
@@ -230,7 +214,7 @@ def color_variance(video_url, skip=None):
     cap.release()
 
     cv2.imwrite(name + 'sheet.png', result)
-    # os.remove(tmp_path)
+    os.remove(tmp_path)
 
 
 if __name__ == '__main__':
