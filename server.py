@@ -103,19 +103,26 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             for dir_name in os.listdir('.'):
                 if os.path.isdir(dir_name):
                     import urllib.parse
-                    dir_list.append({
-                        'name': dir_name,
-                        'href': urllib.parse.quote(f"/{dir_name}"),
-                        'content': os.listdir(dir_name)
-                    })
-                    if 'info.json' in dir_list[-1]['content']:
-                        dir_list[-1]['content'].remove('info.json')
-                    dir_list[-1]['pages'] = len(dir_list[-1]['content'])
+                    file_content = os.listdir(dir_name)
                     meta_file = os.path.join(dir_name, 'info.json')
+
+                    # handle meta file
                     if os.path.exists(meta_file) and os.path.isfile(meta_file):
+                        file_content.remove('info.json')
                         with open(meta_file) as f:
                             meta = json.load(f)
                             dir_list[-1]['meta'] = meta
+
+                    # leave out dirs
+                    file_content = [f for f in file_content if os.path.isfile(os.path.join(dir_name, f))]
+                    
+                    file_content.sort()
+                    dir_list.append({
+                        'name': dir_name,
+                        'href': urllib.parse.quote(f"/{dir_name}"),
+                        'content': file_content,
+                        'pages': len(file_content)
+                    })
 
             self.wfile.write(json.dumps(dir_list).encode('utf-8'))
         else:
