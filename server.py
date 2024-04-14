@@ -1,3 +1,4 @@
+import datetime
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import os
 import json
@@ -32,10 +33,21 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         path = options["name"] if 'name' in options is not None else video_name
 
         os.makedirs(path, exist_ok=True)
+            
         mode = 3
         if 'mode' in options:
             mode = options["mode"]
             
+        meta = {
+            'url': video_url,
+            'name': path,
+            'addTime': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'mode': mode,
+            'skip': skip if skip is not None else 0
+        }
+        with open(os.path.join(path, 'info.json'), 'w') as f:
+            json.dump(meta, f)
+
         if mode == 1:
             universal(video_url, variance=False, skip=skip, path=path)
         elif mode == 2:
@@ -86,6 +98,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.end_headers()
 
+
             dir_list = []
             for dir_name in os.listdir('.'):
                 if os.path.isdir(dir_name):
@@ -96,6 +109,11 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                         'pages': len(os.listdir(dir_name)),
                         'content': os.listdir(dir_name)
                     })
+                    meta_file = os.path.join(dir_name, 'info.json')
+                    if os.path.exists(meta_file) and os.path.isfile(meta_file):
+                        with open(meta_file) as f:
+                            meta = json.load(f)
+                            dir_list[-1]['meta'] = meta
 
             self.wfile.write(json.dumps(dir_list).encode('utf-8'))
         else:
