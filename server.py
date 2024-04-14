@@ -41,7 +41,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         meta = {
             'url': video_url,
             'name': path,
-            'addTime': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'addTime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'mode': mode,
             'skip': skip if skip is not None else 0
         }
