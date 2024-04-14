@@ -19,7 +19,7 @@ def calculate_similarity(frame1, frame2):
     
     return similarity
 
-def universal(video_url, variance=False, skip=None):
+def universal(video_url, variance=False, skip=None, path=None):
     name = video_url
     if name[-1] == '/':
         name = name[:-1]
@@ -123,10 +123,14 @@ def universal(video_url, variance=False, skip=None):
 
     cap.release()
 
-    cv2.imwrite(name + 'sheet.png', result)
+    if path is None:
+        path = name + 'sheet.png'
+    else:
+        path = os.path.join(path, '0.png')
+    cv2.imwrite(path, result)
     os.remove(tmp_path)
 
-def color_variance(video_url, skip=None):
+def color_variance(video_url, skip=None, path=None):
     name = video_url
     if name[-1] == '/':
         name = name[:-1]
@@ -213,7 +217,13 @@ def color_variance(video_url, skip=None):
 
     cap.release()
 
-    cv2.imwrite(name + 'sheet.png', result)
+    if path is None:
+        path = name + 'sheet.png'
+    else:
+        path = os.path.join(path, '0.png')
+
+    print(path)
+    cv2.imwrite(path, result)
     os.remove(tmp_path)
 
 
@@ -223,8 +233,14 @@ if __name__ == '__main__':
     print('1. Mean')
     print('2. Variance')
     print('3. Color Variance')
-    mode = input('Enter the mode: ')
-    skip = int(input('Enter the frame number to skip: '))
+    mode = input('Enter the mode (colour variance by default): ')
+    if mode == '':
+        mode = '3'
+    skip = input('Enter the frame number to skip (Enter to ignore): ')
+    if skip == '':
+        skip = None
+    else:
+        skip = int(skip)
     if mode == '1':
         universal(video_url, variance=False, skip=skip)
     elif mode == '2':
