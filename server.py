@@ -107,8 +107,10 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                         'name': dir_name,
                         'href': urllib.parse.quote(f"/{dir_name}"),
                         'pages': len(os.listdir(dir_name)),
-                        'content': os.listdir(dir_name).remove('info.json')
+                        'content': os.listdir(dir_name)
                     })
+                    if 'info.json' in dir_list[-1]['content']:
+                        dir_list[-1]['content'].remove('info.json')
                     meta_file = os.path.join(dir_name, 'info.json')
                     if os.path.exists(meta_file) and os.path.isfile(meta_file):
                         with open(meta_file) as f:
