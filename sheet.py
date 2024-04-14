@@ -19,7 +19,7 @@ def calculate_similarity(frame1, frame2):
     
     return similarity
 
-def universal(video_url, variance=False, skip=None, path=None):
+def universal(video_url, variance=False, skip=None, path=None, multipage=True):
     name = video_url
     if name[-1] == '/':
         name = name[:-1]
@@ -40,6 +40,7 @@ def universal(video_url, variance=False, skip=None, path=None):
     img = None
     result = None
     frame_number = 0
+    img_number = 0
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -118,19 +119,30 @@ def universal(video_url, variance=False, skip=None, path=None):
             similarity = calculate_similarity(smaller_frame, img)
 
             if similarity < similarity_threshold:
-                result = np.vstack((result, smaller_frame))
-                img = smaller_frame
+                if multipage and result.shape[0] > result.shape[1] * 9 / 16:
+                    # Save the current image
+                    if path is None:
+                        path = name + f'sheet-{str(img_number)}.png'
+                    else:
+                        path = os.path.join(path, f'{str(img_number)}.png')
+                    cv2.imwrite(path, result)
+                    # Start a new image
+                    result = smaller_frame
+                    img = smaller_frame
+                else:
+                    result = np.vstack((result, smaller_frame))
+                    img = smaller_frame
 
     cap.release()
 
     if path is None:
-        path = name + 'sheet.png'
+        path = name + f'sheet-{img_number}.png'
     else:
-        path = os.path.join(path, '0.png')
+        path = os.path.join(path, f'{img_number}.png')
     cv2.imwrite(path, result)
     os.remove(tmp_path)
 
-def color_variance(video_url, skip=None, path=None):
+def color_variance(video_url, skip=None, path=None, multipage=True):
     name = video_url
     if name[-1] == '/':
         name = name[:-1]
@@ -151,6 +163,7 @@ def color_variance(video_url, skip=None, path=None):
     img = None
     result = None
     frame_number = 0
+    img_number = 0
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -212,15 +225,26 @@ def color_variance(video_url, skip=None, path=None):
             similarity = calculate_similarity(smaller_frame, img)
 
             if similarity < similarity_threshold:
-                result = np.vstack((result, smaller_frame))
-                img = smaller_frame
+                if multipage and result.shape[0] > result.shape[1] * 9 / 16:
+                    # Save the current image
+                    if path is None:
+                        path = name + f'sheet-{str(img_number)}.png'
+                    else:
+                        path = os.path.join(path, f'{str(img_number)}.png')
+                    cv2.imwrite(path, result)
+                    # Start a new image
+                    result = smaller_frame
+                    img = smaller_frame
+                else:
+                    result = np.vstack((result, smaller_frame))
+                    img = smaller_frame
 
     cap.release()
 
     if path is None:
-        path = name + 'sheet.png'
+        path = name + f'sheet-{img_number}.png'
     else:
-        path = os.path.join(path, '0.png')
+        path = os.path.join(path, f'{img_number}.png')
 
     print(path)
     cv2.imwrite(path, result)
