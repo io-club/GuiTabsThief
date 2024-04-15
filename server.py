@@ -32,7 +32,9 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         video_name = video_name.split('/')[-1]
         path = options["name"] if 'name' in options is not None else video_name
 
-        os.makedirs(path, exist_ok=True)
+        if os.path.exists(path):
+            os.remove(path, recursive=True)
+        os.makedirs(path)
             
         mode = 3
         if 'mode' in options:
