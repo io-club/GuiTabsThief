@@ -21,6 +21,13 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             return
         
         video_url = options["url"]
+
+        if len(video_url) < 1 or video_url[0] in [' ', '\n', '\t', '.', '/']:
+            self.send_response(400)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': 'Invalid URL'}).encode('utf-8'))
+            return
         
         skip = None
         if 'skip' in options:
@@ -33,8 +40,10 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         path = options["name"] if 'name' in options is not None else video_name
 
         if os.path.exists(path):
-            os.remove(path, recursive=True)
-        os.makedirs(path)
+            # delete existing files
+            for file in os.listdir(path):
+                os.remove(os.path.join(path, file))
+        os.makedirs(path, exist_ok=True)
             
         mode = 3
         if 'mode' in options:
