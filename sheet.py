@@ -183,7 +183,7 @@ def color_variance(video_url, skip=None, path=None, multipage=True, similarity_t
         # Calculate the mean for each horizontal line
         line_means = np.mean(variance, axis=1)
         # conv by 20
-        line_means = np.convolve(line_means, np.ones(20)/20, mode='valid')
+        # line_means = np.convolve(line_means, np.ones(20)/20, mode='valid')
 
         # Find a lower gate that at least 200 points in mean_lines are lower than the gate
         lower_gate = np.percentile(line_means, 15)  # Set the initial gate as the 75th percentile of line_means
@@ -214,7 +214,6 @@ def color_variance(video_url, skip=None, path=None, multipage=True, similarity_t
 
         smaller_frame = frame[boundary[0]:boundary[1]]
 
-
         if img is None:
             img = smaller_frame
             result = smaller_frame
@@ -225,7 +224,6 @@ def color_variance(video_url, skip=None, path=None, multipage=True, similarity_t
 
             if similarity < similarity_threshold:
                 if multipage and result.shape[0] > (result.shape[1] * 10 / 9):
-                    print(result.shape[0], result.shape[1], 'over')
                     # Save the current image
                     if path is None:
                         write = name + f'sheet-{str(img_number)}.png'
