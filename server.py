@@ -74,7 +74,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         elif mode == 2:
             universal(video_url, variance=True, skip=skip, path=path, similarity_threshold=similarity)
         elif mode == 3:
-            color_variance(video_url, skip=skip, path=path, similarity_threshold=similarity, invert=invert)
+            color_variance(video_url, skip=skip, path=path, similarity_threshold=similarity)
         else:
             self.send_response(400)
             self.send_header('Content-type', 'application/json')
