@@ -64,7 +64,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             'mode': mode,
             'skip': skip if skip is not None else 0,
             'similarity': similarity,
-
+            'invert': invert,
         }
         with open(os.path.join(path, 'info.json'), 'w') as f:
             json.dump(meta, f)
