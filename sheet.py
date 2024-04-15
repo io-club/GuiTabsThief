@@ -19,7 +19,7 @@ def calculate_similarity(frame1, frame2):
     
     return similarity
 
-def universal(video_url, variance=False, skip=None, path=None, multipage=True):
+def universal(video_url, variance=False, skip=None, path=None, multipage=True, similarity_threshold=0.85):
     name = video_url
     if name[-1] == '/':
         name = name[:-1]
@@ -66,7 +66,7 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True):
 
         threshold = 50
         padding = 150
-        padding2 = 30
+        padding2 = 15
         
         # Find the abrupt point where the line_means value steeps and not within the padding areas on both sides
         abrupt_point = [0, 0]
@@ -115,7 +115,6 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True):
 
         if smaller_frame is not None:
         # Compare the smaller_frame and img using a similarity metric
-            similarity_threshold = 0.9  # Adjust the threshold as needed
             similarity = calculate_similarity(smaller_frame, img)
 
             if similarity < similarity_threshold:
@@ -143,7 +142,7 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True):
     cv2.imwrite(write, result)
     os.remove(tmp_path)
 
-def color_variance(video_url, skip=None, path=None, multipage=True):
+def color_variance(video_url, skip=None, path=None, multipage=True, similarity_threshold=0.85):
     name = video_url
     if name[-1] == '/':
         name = name[:-1]
@@ -222,7 +221,6 @@ def color_variance(video_url, skip=None, path=None, multipage=True):
 
         if smaller_frame is not None:
         # Compare the smaller_frame and img using a similarity metric
-            similarity_threshold = 0.9  # Adjust the threshold as needed
             similarity = calculate_similarity(smaller_frame, img)
 
             if similarity < similarity_threshold:

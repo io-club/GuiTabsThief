@@ -32,6 +32,14 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         skip = None
         if 'skip' in options:
             skip = options["skip"]
+
+        invert = False
+        if 'invert' in options:
+            invert = options["invert"]
+
+        similarity = 0.85
+        if 'similarity' in options:
+            similarity = options["similarity"]
         
         video_name = video_url
         if video_name[-1] == '/':
@@ -54,17 +62,19 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             'name': path,
             'addTime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'mode': mode,
-            'skip': skip if skip is not None else 0
+            'skip': skip if skip is not None else 0,
+            'similarity': similarity,
+
         }
         with open(os.path.join(path, 'info.json'), 'w') as f:
             json.dump(meta, f)
 
         if mode == 1:
-            universal(video_url, variance=False, skip=skip, path=path)
+            universal(video_url, variance=False, skip=skip, path=path, similarity_threshold=similarity)
         elif mode == 2:
-            universal(video_url, variance=True, skip=skip, path=path)
+            universal(video_url, variance=True, skip=skip, path=path, similarity_threshold=similarity)
         elif mode == 3:
-            color_variance(video_url, skip=skip, path=path)
+            color_variance(video_url, skip=skip, path=path, similarity_threshold=similarity, invert=invert)
         else:
             self.send_response(400)
             self.send_header('Content-type', 'application/json')
