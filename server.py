@@ -16,14 +16,14 @@ class RequestHandler(SimpleHTTPRequestHandler):
             meta = json.load(open(meta_path))
 
         pdf_hash = hash(open(pdf_path, 'rb').read())
-        if 'pdf_hash' in meta and meta['pdf_hash'] == pdf_hash:
+        if 'pdfHash' in meta and meta['pdfHash'] == pdf_hash:
             return
 
         images = pdf2image.convert_from_path(pdf_path)
         for i, img in enumerate(images):
             img.save(os.path.join(path, f'{i}.png'))
         
-        meta['pdf_hash'] = pdf_hash
+        meta['pdfHash'] = pdf_hash
         with open(meta_path, 'w') as f:
             json.dump(meta, f)
 
