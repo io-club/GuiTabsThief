@@ -4,8 +4,29 @@ import os
 import json
 from sheet import *
 import argparse
+import pdf2image
 
-class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
+
+class RequestHandler(SimpleHTTPRequestHandler):
+    def parsePDF(self, pdf_path, path):
+        meta_path = os.path.join(path, 'info.json')
+        if not os.path.exists(meta_path):
+            meta = {"name": os.path.basename(path)}
+        else:
+            meta = json.load(open(meta_path))
+
+        pdf_hash = hash(open(pdf_path, 'rb').read())
+        if 'pdf_hash' in meta and meta['pdf_hash'] == pdf_hash:
+            return
+
+        images = pdf2image.convert_from_path(pdf_path)
+        for i, img in enumerate(images):
+            img.save(os.path.join(path, f'{i}.png'))
+        
+        meta['pdf_hash'] = pdf_hash
+        with open(meta_path, 'w') as f:
+            json.dump(meta, f)
+
     def handlePost(self):
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
@@ -17,18 +38,20 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.send_response(400)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({'error': 'No URL provided'}).encode('utf-8'))
+            self.wfile.write(json.dumps(
+                {'error': 'No URL provided'}).encode('utf-8'))
             return
-        
+
         video_url = options["url"]
 
         if len(video_url) < 1 or video_url[0] in [' ', '\n', '\t', '.', '/']:
             self.send_response(400)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({'error': 'Invalid URL'}).encode('utf-8'))
+            self.wfile.write(json.dumps(
+                {'error': 'Invalid URL'}).encode('utf-8'))
             return
-        
+
         skip = None
         if 'skip' in options:
             skip = options["skip"]
@@ -40,7 +63,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         similarity = 0.85
         if 'similarity' in options:
             similarity = options["similarity"]
-        
+
         video_name = video_url
         if video_name[-1] == '/':
             video_name = video_name[:-1]
@@ -52,11 +75,11 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             for file in os.listdir(path):
                 os.remove(os.path.join(path, file))
         os.makedirs(path, exist_ok=True)
-            
+
         mode = 3
         if 'mode' in options:
             mode = options["mode"]
-            
+
         meta = {
             'url': video_url,
             'name': path,
@@ -70,23 +93,27 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             json.dump(meta, f)
 
         if mode == 1:
-            universal(video_url, variance=False, skip=skip, path=path, similarity_threshold=similarity)
+            universal(video_url, variance=False, skip=skip,
+                      path=path, similarity_threshold=similarity)
         elif mode == 2:
-            universal(video_url, variance=True, skip=skip, path=path, similarity_threshold=similarity)
+            universal(video_url, variance=True, skip=skip,
+                      path=path, similarity_threshold=similarity)
         elif mode == 3:
-            color_variance(video_url, skip=skip, path=path, similarity_threshold=similarity)
+            color_variance(video_url, skip=skip, path=path,
+                           similarity_threshold=similarity)
         else:
             self.send_response(400)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({'error': 'Invalid mode'}).encode('utf-8'))
+            self.wfile.write(json.dumps(
+                {'error': 'Invalid mode'}).encode('utf-8'))
             return
 
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
         self.end_headers()
         self.wfile.write(json.dumps({'result': 'Ok'}).encode('utf-8'))
-    
+
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
@@ -105,7 +132,8 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.send_response(400)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({'error': 'Invalid request JSON'}).encode('utf-8'))
+            self.wfile.write(json.dumps(
+                {'error': 'Invalid request JSON'}).encode('utf-8'))
         except Exception as e:
             self.send_response(500)
             self.send_header('Content-type', 'application/json')
@@ -119,7 +147,6 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.end_headers()
 
-
             dir_list = []
             for dir_name in os.listdir('.'):
                 if os.path.isdir(dir_name):
@@ -127,11 +154,18 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                     file_content = os.listdir(dir_name)
                     meta_file = os.path.join(dir_name, 'info.json')
 
-
                     dir_list.append({
                         'name': dir_name,
                         'href': urllib.parse.quote(f"/{dir_name}"),
                     })
+
+                    # handle pdf file
+                    pdf_files = [f for f in file_content if f.endswith('.pdf')]
+                    if len(pdf_files) > 0:
+                        self.parsePDF(os.path.join(dir_name, pdf_files[0]), dir_name)
+
+                        for pdf_file in pdf_files:
+                            file_content.remove(pdf_file)
 
                     # handle meta file
                     if os.path.exists(meta_file) and os.path.isfile(meta_file):
@@ -141,8 +175,9 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                             dir_list[-1]['meta'] = meta
 
                     # leave out dirs
-                    file_content = [f for f in file_content if os.path.isfile(os.path.join(dir_name, f))]
-                    
+                    file_content = [f for f in file_content if os.path.isfile(
+                        os.path.join(dir_name, f))]
+
                     file_content.sort()
                     dir_list[-1]['content'] = file_content
                     dir_list[-1]['pages'] = len(file_content)
@@ -157,6 +192,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             return path
         else:
             return os.path.join('serve', path)
+
 
 if __name__ == '__main__':
     if not os.path.exists('serve'):
@@ -175,6 +211,6 @@ if __name__ == '__main__':
         port = 8000
 
     # Start the server
-    httpd = HTTPServer(('localhost', port), MyHTTPRequestHandler)
+    httpd = HTTPServer(('localhost', port), RequestHandler)
     print(f"Serving on port {port}...")
     httpd.serve_forever()

@@ -1,23 +1,24 @@
-import sys
 import cv2
 import numpy as np
 import yt_dlp
 import os
 
+
 def calculate_similarity(frame1, frame2):
     # Convert frames to grayscale
     gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY).astype(np.float32)
     gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY).astype(np.float32)
-    
+
     # Ensure both images have the same size
     if gray1.shape != gray2.shape:
         height, width = gray1.shape
         gray2 = cv2.resize(gray2, (width, height))
-    
+
     # Calculate structural similarity index
     similarity = cv2.compareHist(gray1, gray2, cv2.HISTCMP_CORREL)
-    
+
     return similarity
+
 
 def universal(video_url, variance=False, skip=None, path=None, multipage=True, similarity_threshold=0.85):
     name = video_url
@@ -57,17 +58,19 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True, s
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # Calculate the mean for each horizontal line
-        line_means = np.mean(gray, axis=1) if not variance else np.var(gray, axis=1)
+        line_means = np.mean(
+            gray, axis=1) if not variance else np.var(gray, axis=1)
 
         # Apply convolution on the line means using a kernel size of 10
         kernel_size = 40
         line_means_original = line_means
-        line_means = np.convolve(line_means, np.ones(kernel_size)/kernel_size, mode='same')
+        line_means = np.convolve(line_means, np.ones(
+            kernel_size)/kernel_size, mode='same')
 
         threshold = 50
         padding = 150
         padding2 = 15
-        
+
         # Find the abrupt point where the line_means value steeps and not within the padding areas on both sides
         abrupt_point = [0, 0]
         for i in range(padding, len(line_means) - padding):
@@ -82,7 +85,6 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True, s
 
         abrupt_point = abrupt_point[1] if abrupt_point[0] > threshold else None
 
-        
         # Find the exact border by searching from the abrupt_point in line_means_original
         if abrupt_point is None:
             continue
@@ -102,7 +104,7 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True, s
                     break
         if not found_exact:
             abrupt_point = abrupt_point_r
-        
+
         smaller_frame = None
         if abrupt_point < (frame.shape[0] / 2):
             smaller_frame = frame[padding2:abrupt_point]
@@ -114,7 +116,7 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True, s
             result = smaller_frame
 
         if smaller_frame is not None:
-        # Compare the smaller_frame and img using a similarity metric
+            # Compare the smaller_frame and img using a similarity metric
             similarity = calculate_similarity(smaller_frame, img)
 
             if similarity < similarity_threshold:
@@ -141,6 +143,7 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True, s
         write = os.path.join(path, f'{img_number}.png')
     cv2.imwrite(write, result)
     os.remove(tmp_path)
+
 
 def color_variance(video_url, skip=None, path=None, multipage=True, similarity_threshold=0.85):
     name = video_url
@@ -186,7 +189,8 @@ def color_variance(video_url, skip=None, path=None, multipage=True, similarity_t
         # line_means = np.convolve(line_means, np.ones(20)/20, mode='valid')
 
         # Find a lower gate that at least 200 points in mean_lines are lower than the gate
-        lower_gate = np.percentile(line_means, 15)  # Set the initial gate as the 75th percentile of line_means
+        # Set the initial gate as the 75th percentile of line_means
+        lower_gate = np.percentile(line_means, 15)
 
         lower_gate += 30
 
@@ -219,7 +223,7 @@ def color_variance(video_url, skip=None, path=None, multipage=True, similarity_t
             result = smaller_frame
 
         if smaller_frame is not None:
-        # Compare the smaller_frame and img using a similarity metric
+            # Compare the smaller_frame and img using a similarity metric
             similarity = calculate_similarity(smaller_frame, img)
 
             if similarity < similarity_threshold:
