@@ -126,20 +126,23 @@ class RequestHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        try:
-            self.handlePost()
-        except json.decoder.JSONDecodeError:
-            self.send_response(400)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(
-                {'error': 'Invalid request JSON'}).encode('utf-8'))
-        except Exception as e:
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'error': str(e)}).encode('utf-8'))
-            print(e, type(e))
+        if self.path == "/":
+            try:
+                self.handlePost()
+            except json.decoder.JSONDecodeError:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(
+                    {'error': 'Invalid request JSON'}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': str(e)}).encode('utf-8'))
+                print(e, type(e))
+        else:
+            super().do_POST()
 
     def do_GET(self):
         if self.path == "/list":
@@ -163,7 +166,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
                     pdf_files = [f for f in file_content if f.endswith('.pdf')]
                     if len(pdf_files) > 0:
                         self.parsePDF(os.path.join(dir_name, pdf_files[0]), dir_name)
-                        
+
                         file_content = os.listdir(dir_name)
                         for pdf_file in pdf_files:
                             file_content.remove(pdf_file)
