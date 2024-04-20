@@ -177,6 +177,8 @@ class RequestHandler(SimpleHTTPRequestHandler):
                         with open(meta_file) as f:
                             meta = json.load(f)
                             dir_list[-1]['meta'] = meta
+                            if 'name' in meta:
+                                dir_list[-1]['name'] = meta['name']
 
                     # leave out dirs
                     file_content = [f for f in file_content if os.path.isfile(
