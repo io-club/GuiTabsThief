@@ -253,12 +253,82 @@ def color_variance(video_url, skip=None, path=None, multipage=True, similarity_t
     os.remove(tmp_path)
 
 
+def full(video_url, skip=None, path=None, multipage=True, similarity_threshold=0.85):
+    name = video_url
+    if name[-1] == '/':
+        name = name[:-1]
+    name = name.split('/')[-1]
+
+    ydl_opts = {
+        'outtmpl': '/tmp/%(title)s.%(ext)s'
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info_dict = ydl.extract_info(video_url, download=False)
+        tmp_path = ydl.prepare_filename(info_dict)
+        ydl.download([video_url])
+
+    # Continue with the rest of the code
+    cap = cv2.VideoCapture(tmp_path)
+
+    img = None
+    result = None
+    frame_number = 0
+    img_number = 0
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        frame_number += 1
+        if frame is None or not ret:
+            break
+
+        if skip is not None and frame_number < skip:
+            continue
+
+        if frame_number % 120 != 0:
+            continue
+
+        if img is None:
+            img = frame
+            result = frame
+
+        if frame is not None:
+            # Compare the smaller_frame and img using a similarity metric
+            similarity = calculate_similarity(frame, img)
+
+            if similarity < similarity_threshold:
+                if multipage and result.shape[0] > (result.shape[1] * 10 / 9):
+                    # Save the current image
+                    if path is None:
+                        write = name + f'sheet-{str(img_number)}.png'
+                    else:
+                        write = os.path.join(path, f'{str(img_number)}.png')
+                    cv2.imwrite(write, result)
+                    # Start a new image
+                    result = frame
+                    img = frame
+                    img_number += 1
+                else:
+                    result = np.vstack((result, frame))
+                    img = frame
+
+    cap.release()
+
+    if path is None:
+        write = name + f'sheet-{img_number}.png'
+    else:
+        write = os.path.join(path, f'{img_number}.png')
+    cv2.imwrite(write, result)
+    os.remove(tmp_path)
+
+
 if __name__ == '__main__':
     video_url = input('Enter the video URL: ')
     print('Select the mode:')
     print('1. Mean')
     print('2. Variance')
     print('3. Color Variance')
+    print('4. Full')
     mode = input('Enter the mode (colour variance by default): ')
     if mode == '':
         mode = '3'
@@ -273,5 +343,8 @@ if __name__ == '__main__':
         universal(video_url, variance=True, skip=skip)
     elif mode == '3':
         color_variance(video_url, skip=skip)
+    elif mode == '4':
+        full(video_url, skip=skip)
+
     else:
         print('Invalid mode')

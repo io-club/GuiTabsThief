@@ -22,7 +22,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
         images = pdf2image.convert_from_path(pdf_path)
         for i, img in enumerate(images):
             img.save(os.path.join(path, f'{i}.png'))
-        
+
         meta['pdfHash'] = pdf_hash
         with open(meta_path, 'w') as f:
             json.dump(meta, f)
@@ -101,6 +101,9 @@ class RequestHandler(SimpleHTTPRequestHandler):
         elif mode == 3:
             color_variance(video_url, skip=skip, path=path,
                            similarity_threshold=similarity)
+        elif mode == 4:
+            full(video_url, skip=skip, path=path,
+                 similarity_threshold=similarity)
         else:
             self.send_response(400)
             self.send_header('Content-type', 'application/json')
@@ -165,7 +168,8 @@ class RequestHandler(SimpleHTTPRequestHandler):
                     # handle pdf file
                     pdf_files = [f for f in file_content if f.endswith('.pdf')]
                     if len(pdf_files) > 0:
-                        self.parsePDF(os.path.join(dir_name, pdf_files[0]), dir_name)
+                        self.parsePDF(os.path.join(
+                            dir_name, pdf_files[0]), dir_name)
 
                         file_content = os.listdir(dir_name)
                         for pdf_file in pdf_files:
