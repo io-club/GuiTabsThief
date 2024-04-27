@@ -155,7 +155,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
 
             dir_list = []
             for dir_name in os.listdir('.'):
-                if os.path.isdir(dir_name):
+                if os.path.isdir(dir_name) and not dir_name.startswith('.'):
                     import urllib.parse
                     file_content = os.listdir(dir_name)
                     meta_file = os.path.join(dir_name, 'info.json')
@@ -187,8 +187,10 @@ class RequestHandler(SimpleHTTPRequestHandler):
                     # leave out dirs
                     file_content = [f for f in file_content if os.path.isfile(
                         os.path.join(dir_name, f))]
-
-                    file_content.sort()
+                    try:
+                        file_content.sort(key=lambda x: int(x.split('.')[0]))
+                    except TypeError:
+                        file_content.sort()
                     dir_list[-1]['content'] = file_content
                     dir_list[-1]['pages'] = len(file_content)
 
