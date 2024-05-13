@@ -69,7 +69,7 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True, s
 
         threshold = 50
         padding = 150
-        padding2 = 15
+        padding2 = 2
 
         # Find the abrupt point where the line_means value steeps and not within the padding areas on both sides
         abrupt_point = [0, 0]
