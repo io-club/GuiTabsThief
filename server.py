@@ -223,6 +223,6 @@ if __name__ == '__main__':
         port = 8000
 
     # Start the server
-    httpd = HTTPServer(('localhost', port), RequestHandler)
+    httpd = HTTPServer(('0.0.0.0', port), RequestHandler)
     print(f"Serving on port {port}...")
     httpd.serve_forever()

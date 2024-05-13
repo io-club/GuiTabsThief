@@ -16,6 +16,7 @@ RUN apt-get update -qqy \
 	libssl-dev \
 	pkg-config \
         poppler-utils \
+        libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY . /opt/thief/
