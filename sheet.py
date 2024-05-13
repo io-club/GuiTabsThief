@@ -42,6 +42,7 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True, s
     result = None
     frame_number = 0
     img_number = 0
+    valid = False
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -54,6 +55,8 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True, s
 
         if frame_number % 120 != 0:
             continue
+
+        valid = True
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -137,6 +140,10 @@ def universal(video_url, variance=False, skip=None, path=None, multipage=True, s
 
     cap.release()
 
+    if not valid:
+        print('No valid frame found.')
+        return
+        
     if path is None:
         write = name + f'sheet-{img_number}.png'
     else:
@@ -167,6 +174,7 @@ def color_variance(video_url, skip=None, path=None, multipage=True, similarity_t
     result = None
     frame_number = 0
     img_number = 0
+    valid = False
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -180,6 +188,8 @@ def color_variance(video_url, skip=None, path=None, multipage=True, similarity_t
         if frame_number % 120 != 0:
             continue
 
+        valid = True
+        
         # Calculate the variance of the RGB channels
         variance = np.var(frame, axis=(2))
 
@@ -249,6 +259,10 @@ def color_variance(video_url, skip=None, path=None, multipage=True, similarity_t
     else:
         write = os.path.join(path, f'{img_number}.png')
 
+    if not valid:
+        print('No valid frame found.')
+        return
+        
     cv2.imwrite(write, result)
     os.remove(tmp_path)
 
