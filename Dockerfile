@@ -17,6 +17,7 @@ RUN apt-get update -qqy \
 	pkg-config \
         poppler-utils \
         libgl1-mesa-glx \
+	ffmpeg \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY . /opt/thief/
