@@ -2,6 +2,7 @@ import datetime
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import os
 import json
+import re
 from sheet import *
 import argparse
 import pdf2image
@@ -153,48 +154,75 @@ class RequestHandler(SimpleHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.end_headers()
 
-            dir_list = []
-            for dir_name in os.listdir('.'):
-                if os.path.isdir(dir_name) and not dir_name.startswith('.'):
-                    import urllib.parse
+            def dir_filter(path):
+                return not path.startswith('.') and os.path.isdir(path)
+            dir_list = list(filter(dir_filter, os.listdir('.')))
+            tag_pattern = re.compile(r"\[(.*?)\]")
+
+            result = []
+
+            # Iterate through each item in the input list
+            for item in dir_list:
+                # Find all tags in the item
+                tags = tag_pattern.findall(item)
+
+                # Remove the tags from the item to get the name
+                name = tag_pattern.sub('', item)
+
+                # Append the transformed dictionary to the result list
+                result.append({"name": name, "tags": tags})
+
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+
+        elif self.path.startswith('/sheet'):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+
+            dir_name = os.path.join('.', *self.path.rsplit('/')[2:])
+
+            if os.path.exists(dir_name):
+                import urllib.parse
+
+                file_content = os.listdir(dir_name)
+                meta_file = os.path.join(dir_name, 'info.json')
+
+                entry = {
+                    'name': dir_name,
+                    'href': urllib.parse.quote(f"{dir_name[1:]}"),
+                }
+
+                # handle pdf file
+                pdf_files = [f for f in file_content if f.endswith('.pdf')]
+                if len(pdf_files) > 0:
+                    self.parsePDF(os.path.join(
+                        dir_name, pdf_files[0]), dir_name)
+
                     file_content = os.listdir(dir_name)
-                    meta_file = os.path.join(dir_name, 'info.json')
+                    for pdf_file in pdf_files:
+                        file_content.remove(pdf_file)
 
-                    dir_list.append({
-                        'name': dir_name,
-                        'href': urllib.parse.quote(f"/{dir_name}"),
-                    })
+                # handle meta file
+                if os.path.exists(meta_file) and os.path.isfile(meta_file):
+                    file_content.remove('info.json')
+                    with open(meta_file) as f:
+                        meta = json.load(f)
+                        entry['meta'] = meta
+                        if 'name' in meta:
+                            entry['name'] = meta['name']
 
-                    # handle pdf file
-                    pdf_files = [f for f in file_content if f.endswith('.pdf')]
-                    if len(pdf_files) > 0:
-                        self.parsePDF(os.path.join(
-                            dir_name, pdf_files[0]), dir_name)
+                # leave out dirs
+                file_content = [f for f in file_content if os.path.isfile(
+                    os.path.join(dir_name, f))]
+                try:
+                    file_content.sort(key=lambda x: int(x.split('.')[0]))
+                except TypeError:
+                    file_content.sort()
+                entry['content'] = file_content
+                entry['pages'] = len(file_content)
 
-                        file_content = os.listdir(dir_name)
-                        for pdf_file in pdf_files:
-                            file_content.remove(pdf_file)
+                self.wfile.write(json.dumps(entry).encode('utf-8'))
 
-                    # handle meta file
-                    if os.path.exists(meta_file) and os.path.isfile(meta_file):
-                        file_content.remove('info.json')
-                        with open(meta_file) as f:
-                            meta = json.load(f)
-                            dir_list[-1]['meta'] = meta
-                            if 'name' in meta:
-                                dir_list[-1]['name'] = meta['name']
-
-                    # leave out dirs
-                    file_content = [f for f in file_content if os.path.isfile(
-                        os.path.join(dir_name, f))]
-                    try:
-                        file_content.sort(key=lambda x: int(x.split('.')[0]))
-                    except TypeError:
-                        file_content.sort()
-                    dir_list[-1]['content'] = file_content
-                    dir_list[-1]['pages'] = len(file_content)
-
-            self.wfile.write(json.dumps(dir_list).encode('utf-8'))
         else:
             super().do_GET()
 

@@ -1,6 +1,12 @@
 #!/bin/sh
 # `/sbin/setuser www-data` runs the given command as the user `www-data`.
-cd /opt/thief || exit
+if [ -d "/opt/thief" ]; then
+    WORKING="/opt/thief"
+else
+    WORKING="."
+fi
+
+cd $WORKING
 
 python3 -m venv venv && \
 . venv/bin/activate && \
@@ -8,9 +14,9 @@ pip3 install -U pip && \
 pip3 install wheel && \
 pip3 install --upgrade  -r requirements.txt
 
-if [ ! -d "/opt/thief/log/" ];then
-    exec /opt/thief/venv/bin/python /opt/thief/server.py >> /dev/null 2>&1
+if [ ! -d "$WORKING/log/" ];then
+    exec $WORKING/venv/bin/python $WORKING/server.py
 else
-    exec /opt/thief/venv/bin/python /opt/thief/server.py >> /opt/thief/log/$(date "+%Y%m%d-%H%M%S").log 2>&1
+    exec $WORKING/venv/bin/python $WORKING/server.py >> $WORKING/log/$(date "+%Y%m%d-%H%M%S").log 2>&1
 fi
 
