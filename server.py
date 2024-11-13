@@ -159,38 +159,24 @@ class RequestHandler(SimpleHTTPRequestHandler):
             dir_list = list(filter(dir_filter, os.listdir('.')))
             tag_pattern = re.compile(r"\[(.*?)\]")
 
-            result = []
-
-            # Iterate through each item in the input list
-            for item in dir_list:
-                # Find all tags in the item
-                tags = tag_pattern.findall(item)
-
-                # Remove the tags from the item to get the name
-                name = tag_pattern.sub('', item)
-
-                # Append the transformed dictionary to the result list
-                result.append({"name": name, "tags": tags})
-
-            self.wfile.write(json.dumps(result).encode('utf-8'))
+            self.wfile.write(json.dumps(dir_list).encode('utf-8'))
 
         elif self.path.startswith('/sheet'):
+            import urllib.parse
+
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
 
-            dir_name = os.path.join('.', *self.path.rsplit('/')[2:])
+            dir_name = os.path.join('.', *(urllib.parse.unquote(f"{self.path}").rsplit('/')[2:]))
+
+            print(dir_name)
 
             if os.path.exists(dir_name):
-                import urllib.parse
-
                 file_content = os.listdir(dir_name)
                 meta_file = os.path.join(dir_name, 'info.json')
 
-                entry = {
-                    'name': dir_name,
-                    'href': urllib.parse.quote(f"{dir_name[1:]}"),
-                }
+                entry = {}
 
                 # handle pdf file
                 pdf_files = [f for f in file_content if f.endswith('.pdf')]
