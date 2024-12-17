@@ -1,6 +1,7 @@
 import datetime
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import os
+import sys
 import json
 import re
 from sheet import *
@@ -119,10 +120,15 @@ class RequestHandler(SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps({'result': 'Ok'}).encode('utf-8'))
 
     def end_headers(self):
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
-        self.send_header("Access-Control-Allow-Headers", "X-Requested-With")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        origin = self.headers.get("Origin")
+        if origin:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Access-Control-Allow-Credentials", "true")
+        else:
+            self.send_header("Access-Control-Allow-Origin", "*")
+
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS, POST")
+        self.send_header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type")
         super().end_headers()
 
     def do_OPTIONS(self):
@@ -197,13 +203,22 @@ class RequestHandler(SimpleHTTPRequestHandler):
                         if 'name' in meta:
                             entry['name'] = meta['name']
 
-                # leave out dirs
-                file_content = [f for f in file_content if os.path.isfile(
-                    os.path.join(dir_name, f))]
+                # leave out directories
+                file_content = [f for f in file_content if os.path.isfile(os.path.join(dir_name, f))]
+
+                def extract_number(filename):
+                    try:
+                        return int(filename.split('.')[0])
+                    except ValueError:
+                        print(f"Skipping invalid filename: {filename}")
+                        return float('inf')
+
                 try:
-                    file_content.sort(key=lambda x: int(x.split('.')[0]))
-                except TypeError:
+                    file_content.sort(key=extract_number)
+                except Exception as e:
+                    print(f"Sorting error: {e}")
                     file_content.sort()
+
                 entry['content'] = file_content
                 entry['pages'] = len(file_content)
 
@@ -219,6 +234,10 @@ class RequestHandler(SimpleHTTPRequestHandler):
         else:
             return os.path.join('serve', path)
 
+    def log_message(self, format, *args):
+        forwarded_for = self.headers.get('X-Forwarded-For')
+        client_ip = forwarded_for.split(',')[0] if forwarded_for else self.address_string()
+        sys.stderr.write("%s - - [%s] %s\n" % (client_ip, self.log_date_time_string(), format % args))
 
 if __name__ == '__main__':
     if not os.path.exists('serve'):
